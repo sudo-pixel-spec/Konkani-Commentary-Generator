@@ -1,0 +1,32 @@
+fastapi==0.111.0
+uvicorn[standard]==0.30.1
+python-multipart==0.0.9
+python-dotenv==1.0.1
+
+faster-whisper==1.0.3
+requests
+
+
+
+# Translation
+transformers>=4.40.0
+accelerate>=0.30.0
+bitsandbytes>=0.43.0
+sentencepiece
+protobuf
+peft
+
+
+
+# TTS
+soundfile
+numpy
+
+
+
+ffmpeg-python==0.2.0
+
+
+huggingface_hub>=0.23.0
+
+# torch>=2.2.0
