@@ -42,6 +42,74 @@ TTS_DESCRIPTIONS = {
 }
 
 
+def _build_translation_messages(english_text: str, strict: bool = False) -> list[dict]:
+    base_instruction = (
+        "Translate the English text into Konkani in Latin script.\n"
+        "Return ONLY the translated Konkani sentence.\n"
+        "Do not explain, do not include labels, and do not include the English text."
+    )
+    strict_instruction = (
+        "You are a translation engine. Output must be one line of Konkani only.\n"
+        "Forbidden: explanations, notes, headings, bullets, quotes, markdown, or English paraphrases."
+    )
+    instruction = f"{base_instruction}\n{strict_instruction}" if strict else base_instruction
+    return [
+        {
+            "role": "user",
+            "content": f"{instruction}\n\nEnglish: {english_text.strip()}\nKonkani:",
+        }
+    ]
+
+
+def _cleanup_translation_output(raw_text: str) -> str:
+    text = (raw_text or "").replace("**", "").strip()
+    if not text:
+        return ""
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    if not lines:
+        return ""
+
+    for line in lines:
+        lower = line.lower()
+        if lower.startswith("translation:") or lower.startswith("konkani:") or lower.startswith("answer:"):
+            cleaned = line.split(":", 1)[1].strip()
+            if cleaned:
+                return cleaned
+            continue
+        if lower.startswith("#") or lower.startswith("- "):
+            continue
+        return line
+    return lines[0]
+
+
+def _looks_like_explanation(text: str) -> bool:
+    if not text:
+        return True
+    lower = text.lower()
+    bad_patterns = [
+        "in goan",
+        "in the goan",
+        "the konkani",
+        "konkani answer",
+        "goan catholic",
+        "roman script",
+        "latin script",
+        "this expression",
+        "note:",
+        "explanation:",
+        "translation:",
+        "here is the",
+        "in this sentence",
+        "key vocabulary",
+    ]
+    return any(pattern in lower for pattern in bad_patterns)
+
+
+
+
+
+
+
 # -------- Stage 1----------------------------------------------------------
 
 def extract_audio_from_video(video_path: str, out_path: str) -> str:
@@ -125,59 +193,56 @@ def transcribe_video(
 
 def translate_segment(english_text: str, model, tokenizer) -> str:
     """Translate a single English segment to Konkani using Gemma 3 4B."""
-    messages = [
-        {"role": "user", "content": f"Translate the following text to Konkani (Latin script). Output ONLY the raw Konkani translation. Do not include markdown, explanations, notes, or the original text:\n\n{english_text.strip()}"}
-    ]
-    try:
-        encoded = tokenizer.apply_chat_template(
-            messages,
-            tokenize=True,
-            add_generation_prompt=True,
-            return_tensors="pt",
+    attempts = (False, True)
+    for is_strict in attempts:
+        messages = _build_translation_messages(english_text, strict=is_strict)
+        try:
+            encoded = tokenizer.apply_chat_template(
+                messages,
+                tokenize=True,
+                add_generation_prompt=True,
+                return_tensors="pt",
+            )
+            input_ids = encoded.to(DEVICE)
+            if hasattr(input_ids, "input_ids"):
+                attention_mask = input_ids.get("attention_mask", None)
+                input_ids = input_ids["input_ids"]
+            else:
+                attention_mask = None
+        except Exception:
+            prompt = messages[0]["content"]
+            encoded = tokenizer(prompt, return_tensors="pt")
+            input_ids = encoded.input_ids.to(DEVICE)
+            attention_mask = encoded.attention_mask.to(DEVICE)
+
+        generate_kwargs = dict(
+            input_ids=input_ids,
+            max_new_tokens=96,
+            do_sample=False,
+            repetition_penalty=1.05,
         )
-        input_ids = encoded.to(DEVICE)
-        if hasattr(input_ids, "input_ids"):
-            attention_mask = input_ids.get("attention_mask", None)
-            input_ids = input_ids["input_ids"]
-        else:
-            attention_mask = None
-    except Exception:
-        encoded = tokenizer(english_text.strip(), return_tensors="pt")
-        input_ids = encoded.input_ids.to(DEVICE)
-        attention_mask = encoded.attention_mask.to(DEVICE)
+        if attention_mask is not None:
+            generate_kwargs["attention_mask"] = attention_mask
 
-    generate_kwargs = dict(
-        input_ids=input_ids,
-        max_new_tokens=128,
-        do_sample=False,
-        repetition_penalty=1.1,
-    )
-    if attention_mask is not None:
-        generate_kwargs["attention_mask"] = attention_mask
+        with torch.no_grad():
+            output_ids = model.generate(**generate_kwargs)
 
-    with torch.no_grad():
-        output_ids = model.generate(**generate_kwargs)
+        new_tokens = output_ids[0][input_ids.shape[-1]:]
+        raw_konkani = tokenizer.decode(new_tokens, skip_special_tokens=True).strip()
+        cleaned = _cleanup_translation_output(raw_konkani)
+        logger.info("DEBUG: Translation raw='%s' cleaned='%s'", raw_konkani, cleaned)
 
-    new_tokens = output_ids[0][input_ids.shape[-1]:]
-    konkani = tokenizer.decode(new_tokens, skip_special_tokens=True).strip()
-    logger.info(f"DEBUG: Raw Konkani output: '{konkani}'")
+        if cleaned and not _looks_like_explanation(cleaned):
+            return cleaned
 
+        logger.warning(
+            "  Translation attempt produced explanatory output (strict=%s): %s",
+            is_strict,
+            cleaned or "<empty>",
+        )
 
-
-    import re
-    match = re.search(r'\*\*Konkani.*?\*\*\s*(.*?)(\*\*|$)', konkani, re.IGNORECASE | re.DOTALL)
-    if match:
-        extracted = match.group(1).strip()
-        extracted = extracted.replace('**', '').strip()
-        if extracted:
-            return extracted
-
-    first_line = ""
-    for line in konkani.split("\n"):
-        line = line.strip()
-        if line:
-            first_line = line
-            break
+    logger.warning("  Returning English as last-resort fallback for segment.")
+    return english_text.strip()
 
 
 
@@ -185,18 +250,7 @@ def translate_segment(english_text: str, model, tokenizer) -> str:
 
 
 
-    bad_patterns = [
-        "### ", "In Goan", "In the Goan", "The Konkani", "Konkani Answer",
-        "Goan Catholic", "Roman script", "Latin script", "this expression",
-        "Note:", "Explanation:", "Translation:", "Here is the", "In this sentence",
-        "Key Vocabulary"
-    ]
-    for pattern in bad_patterns:
-        if pattern.lower() in first_line.lower():
-            logger.warning("  Translation looks like explanation ('%s'), falling back to English", pattern)
-            return english_text.strip()
 
-    return first_line if first_line else english_text.strip()
 
 
 def translate_segments(
@@ -227,6 +281,8 @@ def translate_segments(
             on_translated(seg)
 
     return segments
+
+
 
 
 def synthesize_segments(
@@ -265,6 +321,9 @@ def synthesize_segments(
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     
     updated_segments = []
+    
+
+
     
     if process.stdout:
         for line in process.stdout:
