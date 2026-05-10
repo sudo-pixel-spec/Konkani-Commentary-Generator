@@ -414,16 +414,18 @@ body::before {
 }
 
 .glass-card {
-  background: var(--glass);
-  border: 1px solid var(--glass-border);
+  background: rgba(20, 25, 40, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--radius-lg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1);
+  transition: all 0.3s ease;
 }
 
 .glass-card:hover {
-  border-color: rgba(255, 107, 53, 0.25);
-  transition: border-color 0.3s ease;
+  border-color: rgba(255, 107, 53, 0.3);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,107,53,0.1);
 }
 
 .section-tag {

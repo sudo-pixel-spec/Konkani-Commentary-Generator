@@ -214,8 +214,10 @@ export default function DemoPanel() {
   const readySegments = segments.filter(s => s.audio_ready).length;
 
   return (
-    <section id="demo" style={{ padding: '80px 0 60px', position: 'relative' }}>
-      <div className="container">
+    <section id="demo" style={{ padding: '80px 0 60px', position: 'relative', zIndex: 1 }}>
+      <div className="blob" style={{ top: '10%', left: '-10%', width: 500, height: 500, background: 'rgba(255,107,53,0.15)' }} />
+      <div className="blob" style={{ bottom: '-10%', right: '-10%', width: 600, height: 600, background: 'rgba(0,201,167,0.1)' }} />
+      <div className="container" style={{ position: 'relative', zIndex: 2 }}>
         <div className="azulejo-border" style={{ marginBottom: 48 }} />
         <motion.div
           initial={{ opacity: 0, y: 24 }}
