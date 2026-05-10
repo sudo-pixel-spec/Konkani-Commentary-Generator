@@ -5,7 +5,7 @@ This project takes English commentary clips, transcribes them, translates them t
 
 Everything runs **100% locally on your machine** using open-source models, specifically optimised to fit within a 6GB VRAM GPU (like the RTX 4050). No paid APIs are required.
 
----
+--- 
 
 ## Architecture
 
