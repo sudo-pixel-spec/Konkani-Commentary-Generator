@@ -1,5 +1,5 @@
 # Konkani Commentary Generator - Free Local AI Edition
-**World's First AI Live Match Commentary in Konkani**
+**Match Commentary in Konkani**
 
 This project takes English commentary clips, transcribes them, translates them to Konkani, and synthesises them using expressive Konkani voices.
 
