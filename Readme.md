@@ -1,11 +1,11 @@
 # Konkani Commentary Generator - Free Local AI Edition
-**World's First AI Live Match Commentary in Konkani**
+**Match Commentary in Konkani**
 
 This project takes English commentary clips, transcribes them, translates them to Konkani, and synthesises them using expressive Konkani voices.
 
 Everything runs **100% locally on your machine** using open-source models, specifically optimised to fit within a 6GB VRAM GPU (like the RTX 4050). No paid APIs are required.
 
----
+--- 
 
 ## Architecture
 
