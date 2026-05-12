@@ -61,7 +61,7 @@ def load_whisper():
         compute_type=compute_type,
         num_workers=2,
     )
-    logger.info("✅ Whisper loaded.")
+    logger.info("Whisper loaded.")
     return _whisper_model
 
 
@@ -121,7 +121,7 @@ def load_translation():
     )
 
     _translation_model.eval()
-    logger.info("✅ Translation model loaded.")
+    logger.info("Translation model loaded.")
     return _translation_model, _translation_tokenizer
 
 
@@ -132,7 +132,7 @@ def unload_translation():
     gc.collect()
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
-    logger.info("🗑️  Translation model unloaded.")
+    logger.info("Translation model unloaded.")
 
 
 

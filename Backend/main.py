@@ -41,11 +41,11 @@ executor = ThreadPoolExecutor(max_workers=1)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     TEMP_DIR.mkdir(parents=True, exist_ok=True)
-    logger.info("✅ Konkani Commentary AI Backend started.")
+    logger.info("Konkani Commentary AI Backend started.")
     logger.info("   TEMP_DIR: %s", TEMP_DIR)
     logger.info("   VRAM:     %s", get_vram_info())
     yield
-    # Cleanup on shutdown
+
     executor.shutdown(wait=False)
     logger.info("Backend shutting down.")
 

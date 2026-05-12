@@ -13,7 +13,7 @@ echo "╚═══════════════════════�
 echo ""
 
 if [ ! -f ".env" ]; then
-    echo "⚠️  .env file not found. Copying from .env.example..."
+    echo ".env file not found. Copying from .env.example..."
     cp .env.example .env
     echo "   Please edit .env and add your HF_TOKEN, then run again."
     exit 1
@@ -28,13 +28,13 @@ if [ ! -d "venv" ]; then
     pip install torch --index-url https://download.pytorch.org/whl/cu121 -q
     pip install -r requirements.txt -q
     pip install git+https://github.com/huggingface/parler-tts.git -q
-    echo "✅ Dependencies installed."
+    echo "Dependencies installed."
 else
     source venv/bin/activate
 fi
 
 if ! command -v ffmpeg &> /dev/null; then
-    echo "❌ ffmpeg not found. Install it with: sudo apt install ffmpeg"
+    echo "ffmpeg not found. Install it with: sudo pacman -S ffmpeg"
     exit 1
 fi
 

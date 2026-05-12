@@ -189,6 +189,8 @@ def transcribe_video(
     return segments_out
 
 
+
+
 # ---------- Stage 2 -----------------------------------------------------------------
 
 def translate_segment(english_text: str, model, tokenizer) -> str:
